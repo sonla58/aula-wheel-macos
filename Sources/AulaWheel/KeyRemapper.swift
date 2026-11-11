@@ -4,6 +4,7 @@ import IOKit.hid
 import IOKit.hidsystem
 
 /// Per-device key remapping on the AULA's HID services, so no other keyboard is affected.
+/// Unverified devices get it only on services that can send Volume/Mute.
 ///
 /// Uses the IOHIDEventSystemClient API in-process: spawning `hidutil` and waiting for it would
 /// spin the main run loop and let other work interleave with enabling/disabling.
@@ -66,9 +67,12 @@ final class KeyRemapper {
     private func matchingServices() -> [IOHIDServiceClient] {
         let services = IOHIDEventSystemClientCopyServices(client) as? [IOHIDServiceClient] ?? []
         return services.filter {
-            device.matches(
+            device.support(
                 vendorID: IOHIDServiceClientCopyProperty($0, kIOHIDVendorIDKey as CFString) as? Int,
-                productID: IOHIDServiceClientCopyProperty($0, kIOHIDProductIDKey as CFString) as? Int)
+                productID: IOHIDServiceClientCopyProperty($0, kIOHIDProductIDKey as CFString) as? Int,
+                sendsVolumeKeys: IOHIDServiceClientConformsTo(
+                    $0, UInt32(kHIDPage_Consumer), UInt32(kHIDUsage_Csmr_ConsumerControl)) != 0
+            ) != nil
         }
     }
 }

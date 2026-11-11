@@ -68,10 +68,18 @@ public struct DeviceMatch: Codable, Equatable, Sendable {
     /// Measured on an AULA F75: 0xFA07 over Bluetooth, 0xFA09 through its 2.4 GHz receiver.
     public static let knownProductIDs = [0xFA07, 0xFA09]
 
-    public func matches(vendorID: Int?, productID: Int?) -> Bool {
-        guard let vendorID, let productID else { return false }
-        return vendorID == self.vendorID && productIDs.contains(productID)
+    /// A device from the same vendor with an unknown product ID is still used if it can send
+    /// Volume/Mute, but reported as unverified.
+    public func support(vendorID: Int?, productID: Int?, sendsVolumeKeys: Bool) -> DeviceSupport? {
+        guard vendorID == self.vendorID else { return nil }
+        if let productID, productIDs.contains(productID) { return .verified }
+        return sendsVolumeKeys ? .unverified : nil
     }
+}
+
+public enum DeviceSupport: Equatable, Sendable {
+    case verified
+    case unverified
 }
 
 public struct InputConfig: Codable, Equatable, Sendable {

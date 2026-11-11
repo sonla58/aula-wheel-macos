@@ -50,7 +50,7 @@ Choose **Open Config File** in the menu bar. The file is `~/Library/Application 
 
 ## Limitations
 
-- Works over Bluetooth and the 2.4 GHz receiver. A cable is untested.
+- Tested with the AULA F75 over Bluetooth and the 2.4 GHz receiver. Other AULA models and a cable are used too, but the menu marks them as unverified. If yours works, add its product ID to `device.productIDs` in the config.
 - While the knob is in RGB mode, the keyboard handles it itself and AulaWheel can't use it.
 - A very quick F11 or F12 tap right after turning the knob may be read as the knob.
 - There is no LED or lighting-profile control yet.
