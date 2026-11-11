@@ -51,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         self.store = store
         config = loaded
         configError = loadError
-        remapper = KeyRemapper(vendorID: loaded.device.vendorID, productID: loaded.device.productID)
+        remapper = KeyRemapper(device: loaded.device)
         classifier = Self.makeClassifier(loaded.input)
         recognizer = GestureRecognizer(doublePressWindow: loaded.doublePressWindowMs / 1000)
         controller = ModeController(
@@ -179,7 +179,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func startHID() {
-        hid.start(vendorID: config.device.vendorID, productID: config.device.productID)
+        hid.start(device: config.device)
     }
 
     /// The remap is attached to the HID service, which is recreated on every reconnect.
@@ -230,7 +230,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         deactivate()
         let deviceChanged = newConfig.device != config.device
         config = newConfig
-        remapper = KeyRemapper(vendorID: config.device.vendorID, productID: config.device.productID)
+        remapper = KeyRemapper(device: config.device)
         classifier = Self.makeClassifier(config.input)
         recognizer = GestureRecognizer(doublePressWindow: config.doublePressWindowMs / 1000)
         controller.replaceModes(config.modes)

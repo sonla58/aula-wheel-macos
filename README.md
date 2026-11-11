@@ -50,7 +50,7 @@ Choose **Open Config File** in the menu bar. The file is `~/Library/Application 
 
 ## Limitations
 
-- Only tested over Bluetooth. The 2.4 GHz dongle and a cable are untested.
+- Works over Bluetooth and the 2.4 GHz receiver. A cable is untested.
 - While the knob is in RGB mode, the keyboard handles it itself and AulaWheel can't use it.
 - A very quick F11 or F12 tap right after turning the knob may be read as the knob.
 - There is no LED or lighting-profile control yet.

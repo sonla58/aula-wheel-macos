@@ -8,16 +8,14 @@ import IOKit.hidsystem
 /// Uses the IOHIDEventSystemClient API in-process: spawning `hidutil` and waiting for it would
 /// spin the main run loop and let other work interleave with enabling/disabling.
 final class KeyRemapper {
-    private let vendorID: Int
-    private let productID: Int
+    private let device: DeviceMatch
     private let client = IOHIDEventSystemClientCreateSimpleClient(kCFAllocatorDefault)
     private static let property = "UserKeyMapping" as CFString
     private static let sourceKey = "HIDKeyboardModifierMappingSrc"
     private static let destinationKey = "HIDKeyboardModifierMappingDst"
 
-    init(vendorID: Int, productID: Int) {
-        self.vendorID = vendorID
-        self.productID = productID
+    init(device: DeviceMatch) {
+        self.device = device
     }
 
     /// Returns false when the keyboard is not connected or a service refused the change.
@@ -68,8 +66,9 @@ final class KeyRemapper {
     private func matchingServices() -> [IOHIDServiceClient] {
         let services = IOHIDEventSystemClientCopyServices(client) as? [IOHIDServiceClient] ?? []
         return services.filter {
-            (IOHIDServiceClientCopyProperty($0, kIOHIDVendorIDKey as CFString) as? Int) == vendorID
-                && (IOHIDServiceClientCopyProperty($0, kIOHIDProductIDKey as CFString) as? Int) == productID
+            device.matches(
+                vendorID: IOHIDServiceClientCopyProperty($0, kIOHIDVendorIDKey as CFString) as? Int,
+                productID: IOHIDServiceClientCopyProperty($0, kIOHIDProductIDKey as CFString) as? Int)
         }
     }
 }

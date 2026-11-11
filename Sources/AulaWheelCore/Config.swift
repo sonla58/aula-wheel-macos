@@ -62,8 +62,16 @@ public struct KnobKeyCodes: Codable, Equatable, Sendable {
 
 public struct DeviceMatch: Codable, Equatable, Sendable {
     public var vendorID: Int = 0x3554
-    public var productID: Int = 0xFA07
+    public var productIDs: [Int] = DeviceMatch.knownProductIDs
     public init() {}
+
+    /// Measured on an AULA F75: 0xFA07 over Bluetooth, 0xFA09 through its 2.4 GHz receiver.
+    public static let knownProductIDs = [0xFA07, 0xFA09]
+
+    public func matches(vendorID: Int?, productID: Int?) -> Bool {
+        guard let vendorID, let productID else { return false }
+        return vendorID == self.vendorID && productIDs.contains(productID)
+    }
 }
 
 public struct InputConfig: Codable, Equatable, Sendable {
@@ -197,6 +205,7 @@ public struct AppConfig: Codable, Equatable, Sendable {
     ]
 
     public func validate() throws {
+        if device.productIDs.isEmpty { throw ConfigError(description: "device.productIDs must not be empty") }
         if modes.isEmpty { throw ConfigError(description: "modes must not be empty") }
         var seen = Set<String>()
         for mode in modes {
@@ -268,8 +277,16 @@ extension DeviceMatch {
         self.init()
         let c = try decoder.container(keyedBy: CodingKeys.self)
         vendorID = try c.decodeIfPresent(Int.self, forKey: .vendorID) ?? vendorID
-        productID = try c.decodeIfPresent(Int.self, forKey: .productID) ?? productID
+        if let ids = try c.decodeIfPresent([Int].self, forKey: .productIDs) {
+            productIDs = ids
+        } else if let legacy = try decoder.container(keyedBy: LegacyKeys.self)
+            .decodeIfPresent(Int.self, forKey: .productID) {
+            // Older files pinned one ID (usually the old default); keep the known ones too.
+            productIDs = productIDs.contains(legacy) ? productIDs : productIDs + [legacy]
+        }
     }
+
+    private enum LegacyKeys: String, CodingKey { case productID }
 }
 
 extension InputConfig {
