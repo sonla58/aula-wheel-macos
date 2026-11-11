@@ -24,11 +24,8 @@ extension AppDelegate {
 
         menu.addItem(disabled("AulaWheel — \(controller.currentMode.name)"))
         menu.addItem(disabled(hid.deviceCount > 0 ? "Keyboard: connected" : "Keyboard: not found"))
-        if !Permissions.accessibility {
-            menu.addItem(item("Accessibility: missing — Open Settings…", #selector(openAccessibility)))
-        }
-        if !Permissions.inputMonitoring {
-            menu.addItem(item("Input Monitoring: missing — Open Settings…", #selector(openInputMonitoring)))
+        for permission in Permission.allCases where !permission.isGranted {
+            menu.addItem(item("\(permission.title): missing — Fix…", #selector(openSetupPermissions)))
         }
         if let configError {
             menu.addItem(disabled("Config error: \(configError.prefix(80))"))
@@ -64,6 +61,7 @@ extension AppDelegate {
         menu.addItem(loginItem)
         menu.addItem(item("Open Config File", #selector(openConfig)))
         menu.addItem(item("Reload Config", #selector(reloadConfigFromMenu)))
+        menu.addItem(item("Setup Guide…", #selector(openSetup)))
         menu.addItem(.separator())
         menu.addItem(item("Quit AulaWheel", #selector(quit), key: "q"))
     }
@@ -117,14 +115,12 @@ extension AppDelegate {
         reloadConfig(force: true)
     }
 
-    @objc private func openAccessibility() {
-        Permissions.promptAccessibility()
-        Permissions.openAccessibilitySettings()
+    @objc private func openSetupPermissions() {
+        setup.show(step: .permissions)
     }
 
-    @objc private func openInputMonitoring() {
-        Permissions.requestInputMonitoring()
-        Permissions.openInputMonitoringSettings()
+    @objc private func openSetup() {
+        setup.show(step: .welcome)
     }
 
     @objc private func quit() {
