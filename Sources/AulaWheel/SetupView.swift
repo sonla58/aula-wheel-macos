@@ -223,7 +223,7 @@ private struct KeyboardStep: View {
                         Button("Open Bluetooth…") { send(.openBluetooth) }
                     }
                 }
-                Text("Tested with the AULA F75 over Bluetooth and its 2.4 GHz receiver. Another model or a cable may need its vendor and product IDs set in the config file.")
+                Text("Tested with the AULA F75 over Bluetooth and its 2.4 GHz receiver. Other AULA models and a cable are used too, but shown as unverified in the menu.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

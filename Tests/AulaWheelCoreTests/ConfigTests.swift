@@ -18,6 +18,14 @@ import Testing
         #expect(config.modes == AppConfig.defaultModes)
     }
 
+    @Test func unknownProductFromSameVendorIsUnverified() {
+        let device = DeviceMatch()
+        #expect(device.support(vendorID: 0x3554, productID: 0xFA09, sendsVolumeKeys: false) == .verified)
+        #expect(device.support(vendorID: 0x3554, productID: 0xFA08, sendsVolumeKeys: true) == .unverified)
+        #expect(device.support(vendorID: 0x3554, productID: 0xFA08, sendsVolumeKeys: false) == nil)
+        #expect(device.support(vendorID: 0x05AC, productID: 0x0343, sendsVolumeKeys: true) == nil)
+    }
+
     @Test func legacySingleProductIDKeepsKnownIDs() throws {
         let json = #"{"device": {"productID": 4660}}"#
         #expect(try AppConfig.decode(Data(json.utf8)).device.productIDs == DeviceMatch.knownProductIDs + [0x1234])

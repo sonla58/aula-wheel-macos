@@ -23,7 +23,7 @@ extension AppDelegate {
         menu.removeAllItems()
 
         menu.addItem(disabled("AulaWheel — \(controller.currentMode.name)"))
-        menu.addItem(disabled(hid.deviceCount > 0 ? "Keyboard: connected" : "Keyboard: not found"))
+        menu.addItem(disabled(keyboardStatus))
         for permission in Permission.allCases where !permission.isGranted {
             menu.addItem(item("\(permission.title): missing — Fix…", #selector(openSetupPermissions)))
         }
@@ -64,6 +64,15 @@ extension AppDelegate {
         menu.addItem(item("Setup Guide…", #selector(openSetup)))
         menu.addItem(.separator())
         menu.addItem(item("Quit AulaWheel", #selector(quit), key: "q"))
+    }
+
+    private var keyboardStatus: String {
+        let unverified = hid.unverifiedProductIDs
+        if !unverified.isEmpty {
+            let ids = unverified.map { String(format: "%04X:%04X", config.device.vendorID, $0) }
+            return "Keyboard: unverified model \(ids.joined(separator: ", "))"
+        }
+        return hid.isConnected ? "Keyboard: connected" : "Keyboard: not found"
     }
 
     private func item(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {

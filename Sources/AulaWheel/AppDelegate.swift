@@ -18,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let hud = HUDController()
     lazy var setup = SetupWindowController(environment: SetupEnvironment(
         modes: { [unowned self] in controller.modes },
-        keyboardConnected: { [unowned self] in hid.deviceCount > 0 },
+        keyboardConnected: { [unowned self] in hid.isConnected },
         appEnabled: { [unowned self] in enabled },
         enableApp: { [unowned self] in
             enabled = true
@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             updateStatusIcon()
         }))
 
-    private var config: AppConfig
+    private(set) var config: AppConfig
     var configError: String?
     private var remapper: KeyRemapper
     private var classifier: KnobClassifier
