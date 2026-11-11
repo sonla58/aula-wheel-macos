@@ -1,3 +1,4 @@
+import AulaWheelCore
 import Foundation
 import IOKit.hid
 
@@ -12,13 +13,13 @@ final class HIDMonitor {
     // Input report the firmware sends on every knob action while the knob drives the LEDs.
     private static let vendorReportID: UInt32 = 0x13
 
-    func start(vendorID: Int, productID: Int) {
+    func start(device: DeviceMatch) {
         stop()
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
-        IOHIDManagerSetDeviceMatching(manager, [
-            kIOHIDVendorIDKey: vendorID,
-            kIOHIDProductIDKey: productID,
-        ] as CFDictionary)
+        let matching = device.productIDs.map {
+            [kIOHIDVendorIDKey: device.vendorID, kIOHIDProductIDKey: $0] as [String: Any]
+        }
+        IOHIDManagerSetDeviceMatchingMultiple(manager, matching as CFArray)
         let context = Unmanaged.passUnretained(self).toOpaque()
         IOHIDManagerRegisterDeviceMatchingCallback(manager, { context, _, _, _ in
             guard let context else { return }

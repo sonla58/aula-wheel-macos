@@ -18,6 +18,11 @@ import Testing
         #expect(config.modes == AppConfig.defaultModes)
     }
 
+    @Test func legacySingleProductIDKeepsKnownIDs() throws {
+        let json = #"{"device": {"productID": 4660}}"#
+        #expect(try AppConfig.decode(Data(json.utf8)).device.productIDs == DeviceMatch.knownProductIDs + [0x1234])
+    }
+
     @Test func actionsRoundTrip() throws {
         let actions: [Action] = [
             .none, .volumeUp(fine: true), .volumeDown(fine: false), .mute,
@@ -52,6 +57,10 @@ import Testing
         var empty = AppConfig()
         empty.modes = []
         #expect(throws: ConfigError.self) { try empty.validate() }
+
+        var noDevice = AppConfig()
+        noDevice.device.productIDs = []
+        #expect(throws: ConfigError.self) { try noDevice.validate() }
 
         var badHold = AppConfig()
         badHold.input.knobMaxHoldMs = 0
