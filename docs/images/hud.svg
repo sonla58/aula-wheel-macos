@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="282" viewBox="0 0 880 282" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <title>AulaWheel HUD: the mode picker below the menu bar, and the banners shown when the mode, scroll speed or RGB state changes</title>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b6fa8"/>
+      <stop offset="0.55" stop-color="#a58fc0"/>
+      <stop offset="1" stop-color="#efbf9a"/>
+    </linearGradient>
+    <radialGradient id="blobA" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd9b8" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#ffd9b8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blobB" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7fb4ff" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#7fb4ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.28"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.6"/>
+    </linearGradient>
+    <filter id="lift" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#26203f" flood-opacity="0.28"/>
+    </filter>
+    <clipPath id="card"><rect width="880" height="282" rx="24"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#card)">
+    <rect width="880" height="282" fill="url(#wall)"/>
+    <circle cx="720" cy="300" r="260" fill="url(#blobA)"/>
+    <circle cx="140" cy="40" r="240" fill="url(#blobB)"/>
+
+    <!-- menu bar -->
+    <rect width="880" height="30" fill="#ffffff" fill-opacity="0.24"/>
+    <g fill="#ffffff" fill-opacity="0.85">
+      <rect x="22" y="10" width="12" height="11" rx="3"/>
+      <rect x="48" y="11" width="54" height="9" rx="4.5"/>
+      <rect x="114" y="11" width="28" height="9" rx="4.5" fill-opacity="0.6"/>
+      <rect x="154" y="11" width="34" height="9" rx="4.5" fill-opacity="0.6"/>
+      <rect x="200" y="11" width="44" height="9" rx="4.5" fill-opacity="0.6"/>
+      <rect x="704" y="11" width="16" height="9" rx="3" fill-opacity="0.6"/>
+      <rect x="732" y="11" width="16" height="9" rx="3" fill-opacity="0.6"/>
+      <rect x="796" y="11" width="62" height="9" rx="4.5"/>
+    </g>
+    <!-- AulaWheel status item: the current mode's symbol -->
+    <g transform="translate(772 15.5)" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-4 -2 L-4 -6 M-6 -4 L-4 -6.5 L-2 -4 M-4 2 L-4 6 M-6 4 L-4 6.5 L-2 4"/>
+      <path d="M0.5 -3 H6 M0.5 0 H6 M0.5 3 H6"/>
+    </g>
+
+    <!-- mode picker (double press) -->
+    <g filter="url(#lift)">
+      <rect x="282" y="42" width="316" height="48" rx="24" fill="url(#glass)"/>
+      <rect x="282.5" y="42.5" width="315" height="47" rx="23.5" fill="none" stroke="url(#rim)"/>
+    </g>
+    <rect x="389" y="47" width="102" height="38" rx="19" fill="#0a84ff"/>
+    <g font-size="14" font-weight="600">
+      <g transform="translate(306 66)" fill="#1d1d1f">
+        <path d="M-6 -3 H-3 L2 -7.5 V7.5 L-3 3 H-6 Z"/>
+        <path d="M5 -4 Q8 0 5 4 M7.5 -7 Q12.5 0 7.5 7" fill="none" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+        <text x="20" y="5">Volume</text>
+      </g>
+      <g transform="translate(412 66)" fill="#ffffff">
+        <path d="M-5 -2.5 V-7 M-7.5 -4.5 L-5 -7.5 L-2.5 -4.5 M-5 2.5 V7 M-7.5 4.5 L-5 7.5 L-2.5 4.5 M0.5 -3.5 H7 M0.5 0 H7 M0.5 3.5 H7" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="16" y="5">Scroll</text>
+      </g>
+      <g transform="translate(512 66)" fill="#1d1d1f">
+        <path d="M-7 -7 L1 0 L-7 7 Z"/>
+        <rect x="3" y="-7" width="2.6" height="14" rx="1"/>
+        <rect x="7.6" y="-7" width="2.6" height="14" rx="1"/>
+        <text x="17" y="5">Media</text>
+      </g>
+    </g>
+    <text x="440" y="112" text-anchor="middle" font-size="12" font-weight="500" fill="#ffffff" fill-opacity="0.92">double press · rotate · press</text>
+
+    <!-- banners -->
+    <g filter="url(#lift)">
+      <rect x="96" y="166" width="168" height="54" rx="27" fill="url(#glass)"/>
+      <rect x="96.5" y="166.5" width="167" height="53" rx="26.5" fill="none" stroke="url(#rim)"/>
+      <rect x="296" y="162" width="214" height="62" rx="31" fill="url(#glass)"/>
+      <rect x="296.5" y="162.5" width="213" height="61" rx="30.5" fill="none" stroke="url(#rim)"/>
+      <rect x="542" y="162" width="242" height="62" rx="31" fill="url(#glass)"/>
+      <rect x="542.5" y="162.5" width="241" height="61" rx="30.5" fill="none" stroke="url(#rim)"/>
+    </g>
+
+    <g transform="translate(128 193)" fill="#1d1d1f">
+      <path d="M-8 -4 H-4 L2 -10 V10 L-4 4 H-8 Z"/>
+      <path d="M6 -5 Q10 0 6 5 M9.5 -9 Q16 0 9.5 9" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round"/>
+      <text x="28" y="5.5" font-size="15" font-weight="600">Volume</text>
+    </g>
+
+    <g transform="translate(330 193)">
+      <path d="M-6 -3 V-9 M-9.5 -6 L-6 -10 L-2.5 -6 M-6 3 V9 M-9.5 6 L-6 10 L-2.5 6 M1 -5 H10 M1 0 H10 M1 5 H10" fill="none" stroke="#1d1d1f" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="26" y="-2" font-size="15" font-weight="600" fill="#1d1d1f">Scroll</text>
+      <text x="26" y="15" font-size="12" fill="#1d1d1f" fill-opacity="0.62">Speed: Medium</text>
+    </g>
+
+    <g transform="translate(578 198)" fill="none" stroke-width="2.4" stroke-linecap="round">
+      <path d="M-13 0 A13 13 0 0 1 13 0" stroke="#ff453a"/>
+      <path d="M-10 0 A10 10 0 0 1 10 0" stroke="#ff9f0a"/>
+      <path d="M-7 0 A7 7 0 0 1 7 0" stroke="#30d158"/>
+      <path d="M-4 0 A4 4 0 0 1 4 0" stroke="#0a84ff"/>
+      <text x="26" y="-7" font-size="15" font-weight="600" fill="#1d1d1f" stroke="none">RGB</text>
+      <text x="26" y="10" font-size="12" fill="#1d1d1f" fill-opacity="0.62" stroke="none">Knob controls the lights</text>
+    </g>
+
+    <g font-size="12" font-weight="500" fill="#ffffff" fill-opacity="0.92" text-anchor="middle">
+      <text x="180" y="252">mode changed</text>
+      <text x="403" y="252">press in Scroll mode</text>
+      <text x="663" y="252">long press</text>
+    </g>
+  </g>
+</svg>
