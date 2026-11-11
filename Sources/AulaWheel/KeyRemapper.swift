@@ -8,8 +8,8 @@ import IOKit.hidsystem
 /// Uses the IOHIDEventSystemClient API in-process: spawning `hidutil` and waiting for it would
 /// spin the main run loop and let other work interleave with enabling/disabling.
 final class KeyRemapper {
-    let vendorID: Int
-    let productID: Int
+    private let vendorID: Int
+    private let productID: Int
     private let client = IOHIDEventSystemClientCreateSimpleClient(kCFAllocatorDefault)
     private static let property = "UserKeyMapping" as CFString
     private static let sourceKey = "HIDKeyboardModifierMappingSrc"
@@ -49,7 +49,7 @@ final class KeyRemapper {
                 make: { [Self.sourceKey: NSNumber(value: $0.source), Self.destinationKey: NSNumber(value: $0.destination)] as Any }
             )
             if !IOHIDServiceClientSetProperty(service, Self.property, updated as CFArray) {
-                NSLog("AulaWheel: could not set UserKeyMapping on HID service")
+                Log.remap.error("could not set UserKeyMapping on a HID service")
                 ok = false
             }
         }

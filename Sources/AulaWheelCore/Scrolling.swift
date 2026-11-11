@@ -14,7 +14,7 @@ public struct ScrollPlanner: Sendable {
 
     /// 1x at `accelerationThresholdMs` between detents, rising linearly to `maxAcceleration`
     /// at `accelerationFullMs` (about the fastest the firmware sends detents).
-    public func accelerationFactor(gap: TimeInterval) -> Double {
+    func accelerationFactor(gap: TimeInterval) -> Double {
         let threshold = config.accelerationThresholdMs / 1000
         let full = min(config.accelerationFullMs / 1000, threshold)
         guard gap < threshold else { return 1 }

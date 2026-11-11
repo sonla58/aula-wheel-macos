@@ -6,7 +6,7 @@ public enum KnobInput: String, Codable, CaseIterable, Sendable {
 }
 
 public enum InputSource: String, Codable, Sendable {
-    /// The keyboard sends Consumer Volume/Mute; the app remaps them per device with `hidutil`
+    /// The keyboard sends Consumer Volume/Mute; the app remaps them on that device only
     /// and tells the knob apart from F10-F12 by press duration.
     case consumerRemap
     /// The knob has already been remapped on the keyboard to three dedicated key codes.
@@ -33,7 +33,7 @@ public struct KnobKeyCodes: Codable, Equatable, Sendable {
         self.press = press
     }
 
-    // kVK_F18 / kVK_F19 / kVK_F20: what the hidutil remap turns Vol+ / Vol- / Mute into.
+    // kVK_F18 / kVK_F19 / kVK_F20: what `ConsumerRemap` turns Vol+ / Vol- / Mute into.
     public static let remapped = KnobKeyCodes(rotateCW: 79, rotateCCW: 80, press: 90)
     // kVK_F13 / kVK_F14 / kVK_F15.
     public static let defaultFunctionKeys = KnobKeyCodes(rotateCW: 105, rotateCCW: 107, press: 113)
@@ -46,6 +46,14 @@ public struct KnobKeyCodes: Codable, Equatable, Sendable {
         case rotateCCW: .rotateCCW
         case press: .press
         default: nil
+        }
+    }
+
+    public func keyCode(for input: KnobInput) -> UInt16 {
+        switch input {
+        case .rotateCW: rotateCW
+        case .rotateCCW: rotateCCW
+        case .press: press
         }
     }
 

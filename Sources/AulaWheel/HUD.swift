@@ -85,7 +85,6 @@ final class HUDController {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
         if let visible = screen?.visibleFrame {
-            // Just below the menu bar, centered on the screen that has the pointer.
             let origin = NSPoint(x: visible.midX - size.width / 2, y: visible.maxY - size.height)
             panel.setFrame(NSRect(origin: origin, size: size), display: true)
         }

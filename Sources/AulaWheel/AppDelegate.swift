@@ -28,7 +28,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     var statusItem: NSStatusItem!
     private var deadlineTimer: Timer?
-    private var healthTimer: Timer?
     /// The remap is only ever on while this is true; it is cleared before anything else on disable.
     private var remapWanted = false
     private var remapRefresh: DispatchWorkItem?
@@ -112,7 +111,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             MainActor.assumeIsolated { self?.checkHealth() }
         }
         RunLoop.main.add(timer, forMode: .common)
-        healthTimer = timer
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -247,8 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let time = Clock.eventTime(event.timestamp)
         Log.input.debug("""
             key \(input.rawValue, privacy: .public) \(event.isDown ? "down" : "up", privacy: .public) \
-            repeat=\(event.isRepeat, privacy: .public) t=\(time, format: .fixed(precision: 4), privacy: .public) \
-            lag=\((Clock.now() - time) * 1000, format: .fixed(precision: 1), privacy: .public)ms
+            repeat=\(event.isRepeat, privacy: .public) t=\(time, format: .fixed(precision: 4), privacy: .public)
             """)
 
         if config.input.source == .functionKeys {
@@ -309,12 +306,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let now = Clock.now()
         let codes = config.input.watchedKeyCodes
         process(classifier.tick(now: now) { input in
-            let code: UInt16 = switch input {
-            case .rotateCW: codes.rotateCW
-            case .rotateCCW: codes.rotateCCW
-            case .press: codes.press
-            }
-            let down = CGEventSource.keyState(.hidSystemState, key: code)
+            let down = CGEventSource.keyState(.hidSystemState, key: codes.keyCode(for: input))
             Log.input.debug("tick \(input.rawValue, privacy: .public) keyState=\(down, privacy: .public)")
             return down
         })

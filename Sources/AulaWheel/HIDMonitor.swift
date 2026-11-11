@@ -7,7 +7,6 @@ final class HIDMonitor {
     var onVendorPing: (() -> Void)?
 
     private(set) var deviceCount = 0
-    private(set) var openResult: IOReturn = kIOReturnNotOpen
     private var manager: IOHIDManager?
 
     // Input report the firmware sends on every knob action while the knob drives the LEDs.
@@ -37,7 +36,7 @@ final class HIDMonitor {
             Unmanaged<HIDMonitor>.fromOpaque(context).takeUnretainedValue().onVendorPing?()
         }, context)
         IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.commonModes.rawValue)
-        openResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
         self.manager = manager
     }
 
@@ -47,6 +46,5 @@ final class HIDMonitor {
         IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
         self.manager = nil
         deviceCount = 0
-        openResult = kIOReturnNotOpen
     }
 }

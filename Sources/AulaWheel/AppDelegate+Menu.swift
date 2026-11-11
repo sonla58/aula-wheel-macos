@@ -3,7 +3,6 @@ import AulaWheelCore
 import ServiceManagement
 
 extension AppDelegate {
-
     func updateStatusIcon() {
         guard let button = statusItem?.button else { return }
         let symbol: String
