@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Builds build/AulaWheel.app. Pass --install to copy it to ~/Applications and relaunch it.
+# Set ARCHS (e.g. "arm64 x86_64") for a universal binary; the default is this Mac's architecture.
 #
 # macOS ties Accessibility / Input Monitoring grants to the code signature, so the app is signed
 # with a stable identity (SIGN_IDENTITY, else the first "Apple Development" certificate).
@@ -7,8 +8,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-swift build -c release --product AulaWheel
-BIN_DIR="$(swift build -c release --show-bin-path)"
+ARCH_FLAGS=()
+for arch in ${ARCHS:-}; do ARCH_FLAGS+=(--arch "$arch"); done
+
+swift build -c release --product AulaWheel ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN_DIR="$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 APP="build/AulaWheel.app"
 rm -rf "$APP"

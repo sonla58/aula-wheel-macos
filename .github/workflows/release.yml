@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - scripts/**
+      - Resources/Info.plist
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: swift test
+
+      - name: Check the tag matches the app version
+        if: github.event_name == 'release'
+        run: |
+          version="$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)"
+          if [[ "${GITHUB_REF_NAME#v}" != "$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match CFBundleShortVersionString $version in Resources/Info.plist"
+            exit 1
+          fi
+
+      - name: Build universal app
+        run: scripts/build-app.sh
+        env:
+          ARCHS: arm64 x86_64
+          # No signing certificate on the runner; see the README for what ad-hoc signing means for users.
+          SIGN_IDENTITY: "-"
+
+      - name: Package zip and DMG
+        run: scripts/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AulaWheel
+          path: |
+            build/AulaWheel-*.zip
+            build/AulaWheel-*.dmg
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        run: gh release upload "$GITHUB_REF_NAME" build/AulaWheel-*.zip build/AulaWheel-*.dmg --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

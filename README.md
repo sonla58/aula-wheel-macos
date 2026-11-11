@@ -26,15 +26,23 @@ Turn the volume knob of the **AULA F75** into a scroll wheel, a media scrubber a
 
 ## Install
 
+Download the DMG from the [latest release](https://github.com/sonla58/aula-wheel-macos/releases/latest), open it and drag AulaWheel into Applications.
+
+Release builds are not notarized, so the first time you open the app macOS will refuse it. Open System Settings → Privacy & Security and click **Open Anyway**. Each release is signed separately, so after updating you may need to remove AulaWheel from Accessibility and Input Monitoring and add it again (the setup window shows you how).
+
+On first launch a setup window walks you through allowing **Accessibility** and **Input Monitoring** (a small guide sits next to System Settings and shows what to turn on), connecting the keyboard, and trying each knob gesture. Reopen it any time with **Setup Guide…** in the menu bar.
+
+Requires macOS 14 or later (the Liquid Glass HUD needs macOS 26).
+
+### Build from source
+
 ```sh
 git clone https://github.com/sonla58/aula-wheel-macos.git
 cd aula-wheel-macos
 scripts/build-app.sh --install
 ```
 
-On first launch a setup window walks you through allowing **Accessibility** and **Input Monitoring** (a small guide sits next to System Settings and shows what to turn on), connecting the keyboard, and trying each knob gesture. Reopen it any time with **Setup Guide…** in the menu bar.
-
-Requires macOS 14 or later (the Liquid Glass HUD needs macOS 26) and Xcode 16 or later.
+Building needs Xcode 16 or later.
 
 ## Customize
 
