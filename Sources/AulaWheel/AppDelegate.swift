@@ -16,6 +16,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let hid = HIDMonitor()
     private let poster = EventPoster()
     let hud = HUDController()
+    lazy var setup = SetupWindowController(environment: SetupEnvironment(
+        modes: { [unowned self] in controller.modes },
+        keyboardConnected: { [unowned self] in hid.deviceCount > 0 },
+        appEnabled: { [unowned self] in enabled },
+        enableApp: { [unowned self] in
+            enabled = true
+            activate()
+            updateStatusIcon()
+        }))
 
     private var config: AppConfig
     var configError: String?
@@ -99,13 +108,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         store.startWatching()
 
-        if !Permissions.accessibility { Permissions.promptAccessibility() }
-        if !Permissions.inputMonitoring { Permissions.requestInputMonitoring() }
         hadInputMonitoring = Permissions.inputMonitoring
 
         startHID()
         activate()
         updateStatusIcon()
+        setup.showIfNeeded()
 
         let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkHealth() }
@@ -275,6 +283,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 poster.postSystemKey(systemKey(for: input), modifiers: modifiers)
             case .knob(let input, let modifiers, let time):
                 for gesture in recognizer.handle(input, modifiers: modifiers, time: time) {
+                    setup.record(gesture)
                     apply(controller.handle(gesture, now: Clock.now()))
                 }
             }
@@ -311,6 +320,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return down
         })
         for gesture in recognizer.tick(now: now) {
+            setup.record(gesture)
             apply(controller.handle(gesture, now: now))
         }
         apply(controller.tick(now: now))
@@ -318,6 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func apply(_ effects: [ModeEffect]) {
+        setup.record(effects)
         for effect in effects {
             switch effect {
             case .perform(let action, let time):
