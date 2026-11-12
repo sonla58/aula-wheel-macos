@@ -137,7 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         deactivate()
-        // After the keyboard is handed back, so a slow copy can't hold up anything.
+        // After deactivate(), so the keyboard already works natively while a slow copy runs.
         updater.installOnQuit()
     }
 

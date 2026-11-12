@@ -1,6 +1,6 @@
 import Foundation
 
-/// A release version such as `0.0.2`. Tags may carry a leading `v`; anything else (`1.0-beta`) is rejected.
+/// One to four numbers such as `0.0.2`, optionally after a `v` as in tags. Suffixes (`1.0-beta`) are rejected.
 public struct AppVersion: Comparable, Hashable, Sendable, CustomStringConvertible {
     public let description: String
     /// Numeric components without trailing zeros, so `1.0` and `1.0.0` compare and hash equal.
@@ -100,7 +100,8 @@ public enum InstallMoment: Equatable, Sendable {
     /// The app just started, before it touches the keyboard. Tried once per version, so a bad
     /// update cannot make the app relaunch itself in a loop.
     case launching(alreadyTriedThisVersion: Bool)
-    /// Periodic check while running. `busy` covers anything the user is in the middle of.
+    /// Periodic check while running: `seconds` since the last keyboard or mouse input, and `busy`
+    /// for anything the user is in the middle of.
     case idle(seconds: TimeInterval, busy: Bool)
 }
 
@@ -150,7 +151,7 @@ public enum UpdatePolicy {
         return now.timeIntervalSince(date) >= interval
     }
 
-    /// The release's zip, if it is a published, final release newer than `current`.
+    /// The release's zip, if it is a published, final release newer than `current` and served over HTTPS.
     public static func update(from release: GitHubRelease, current: AppVersion) -> AvailableUpdate? {
         guard !release.draft, !release.prerelease,
               let version = AppVersion(release.tagName), version > current else { return nil }

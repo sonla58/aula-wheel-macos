@@ -6,8 +6,9 @@ import Foundation
 /// Finds new releases on GitHub, downloads and stages them, and installs them when it won't get in
 /// the user's way: when they ask, when the app quits or starts, or after they've been away a while.
 ///
-/// None of this runs on the input path. Network and file work happen off the main thread, and an
-/// install always goes through quitting, which hands the keyboard back to macOS first.
+/// None of this runs on the input path. Checks, downloads and idle installs work off the main
+/// thread; launch and quit installs block it, but only while the app isn't handling the keyboard.
+/// The new version only runs after this process quits, which hands the keyboard back to macOS first.
 @MainActor
 final class Updater {
     static let repository = "sonla58/aula-wheel-macos"
@@ -96,6 +97,7 @@ final class Updater {
         let tried = defaults.string(forKey: Key.launchAttempt) == staged.description
         guard UpdatePolicy.shouldInstall(
             staged: staged, current: current, moment: .launching(alreadyTriedThisVersion: tried)) else { return false }
+        // Recorded before trying, so a failed or interrupted install still uses up the one attempt.
         defaults.set(staged.description, forKey: Key.launchAttempt)
         Log.update.notice("installing \(staged.description, privacy: .public) at launch")
         return installNowAndRelaunch(version: staged)
@@ -327,7 +329,7 @@ final class Updater {
 
     // MARK: - Installing
 
-    /// "Restart to Update", or an idle install: copy and verify off the main thread, swap, relaunch.
+    /// "Restart to Update", or an idle install. The slow copy and verify run off the main thread.
     func restartToUpdate(userInitiated: Bool = true) {
         guard !installing else { return }
         guard stagedStillThere(), let staged else {

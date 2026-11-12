@@ -5,7 +5,8 @@ import Security
 /// File work for updates: checking a downloaded app, and swapping it in place of the running one.
 ///
 /// The swap is a single atomic rename, so whatever interrupts it (crash, power loss, a killed
-/// process), the app at the original path is always either the old version or the new one.
+/// process), the app at the original path is either the old version or the new one. Only volumes
+/// without `RENAME_SWAP` fall back to two renames, with a brief moment where no app is there.
 enum UpdateInstaller {
     struct Failure: Error, CustomStringConvertible {
         let description: String
@@ -162,7 +163,7 @@ enum UpdateInstaller {
         return prepared
     }
 
-    /// Atomically exchanges `prepared` and `target`, then deletes the old app (now at `prepared`).
+    /// Exchanges `prepared` and `target`, then deletes the old app. `prepared` is removed either way.
     static func swap(_ prepared: URL, into target: URL) throws {
         defer { try? FileManager.default.removeItem(at: prepared) }
         if renamex_np(prepared.path, target.path, UInt32(RENAME_SWAP)) == 0 { return }
