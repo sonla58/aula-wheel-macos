@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Packages build/AulaWheel.app (from scripts/build-app.sh) into a zip and a drag-to-Applications DMG,
 # named after the app's version: build/AulaWheel-<version>.zip and build/AulaWheel-<version>.dmg.
+# The in-app updater looks for the zip by exactly this name on the release tagged v<version>.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

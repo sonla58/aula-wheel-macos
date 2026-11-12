@@ -4,4 +4,5 @@ import os
 enum Log {
     static let input = Logger(subsystem: "dev.aulawheel.AulaWheel", category: "input")
     static let remap = Logger(subsystem: "dev.aulawheel.AulaWheel", category: "remap")
+    static let update = Logger(subsystem: "dev.aulawheel.AulaWheel", category: "update")
 }
