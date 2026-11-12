@@ -28,7 +28,9 @@ Turn the volume knob of the **AULA F75** into a scroll wheel, a media scrubber a
 
 Download the DMG from the [latest release](https://github.com/sonla58/aula-wheel-macos/releases/latest), open it and drag AulaWheel into Applications.
 
-Release builds are not notarized, so the first time you open the app macOS will refuse it. Open System Settings → Privacy & Security and click **Open Anyway**. Each release is signed separately, so after updating you may need to remove AulaWheel from Accessibility and Input Monitoring and add it again (the setup window shows you how).
+Release builds are not notarized, so each time you open a newly downloaded version macOS will refuse it. Open System Settings → Privacy & Security and click **Open Anyway**.
+
+Releases from 0.0.2 on are signed with the same certificate, so Accessibility and Input Monitoring should stay allowed when you update. Coming from 0.0.1 (which was signed differently), remove AulaWheel from both lists and add it again once (the setup window shows you how).
 
 On first launch a setup window walks you through allowing **Accessibility** and **Input Monitoring** (a small guide sits next to System Settings and shows what to turn on), connecting the keyboard, and trying each knob gesture. Reopen it any time with **Setup Guide…** in the menu bar.
 
@@ -43,6 +45,8 @@ scripts/build-app.sh --install
 ```
 
 Building needs Xcode 16 or later.
+
+The build is signed with your first Apple Development certificate if you have one, so permissions survive rebuilds. Without one it is ad-hoc signed, and you have to allow AulaWheel again after each build. Maintainers: releases are signed with a self-signed certificate made once by `scripts/make-signing-cert.sh` and pinned in `scripts/release-cert.sha1`. Only the release workflow gets the key, and it fails rather than attach a build signed any other way, so set the `SIGNING_CERT_P12` and `SIGNING_CERT_PASSWORD` secrets before publishing a release.
 
 ## Customize
 
