@@ -22,7 +22,8 @@ extension AppDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        menu.addItem(disabled("AulaWheel — \(controller.currentMode.name)"))
+        let version = updater.current.map { " \($0)" } ?? ""
+        menu.addItem(disabled("AulaWheel\(version) — \(controller.currentMode.name)"))
         menu.addItem(disabled(keyboardStatus))
         for permission in Permission.allCases where !permission.isGranted {
             menu.addItem(item("\(permission.title): missing — Fix…", #selector(openSetupPermissions)))
@@ -62,6 +63,20 @@ extension AppDelegate {
         menu.addItem(item("Open Config File", #selector(openConfig)))
         menu.addItem(item("Reload Config", #selector(reloadConfigFromMenu)))
         menu.addItem(item("Setup Guide…", #selector(openSetup)))
+        menu.addItem(.separator())
+
+        let update = UpdatePolicy.menuEntry(for: updater.phase)
+        if let status = update.status {
+            menu.addItem(disabled(status.count > 90 ? status.prefix(89) + "…" : status))
+        }
+        if let title = update.actionTitle, let action = update.action {
+            let entry = item(title, #selector(runUpdateAction(_:)))
+            entry.representedObject = action
+            menu.addItem(entry)
+        }
+        let autoUpdate = item("Update Automatically", #selector(toggleAutomaticUpdates))
+        autoUpdate.state = updater.automatic ? .on : .off
+        menu.addItem(autoUpdate)
         menu.addItem(.separator())
         menu.addItem(item("Quit AulaWheel", #selector(quit), key: "q"))
     }
@@ -130,6 +145,19 @@ extension AppDelegate {
 
     @objc private func openSetup() {
         setup.show(step: .welcome)
+    }
+
+    @objc private func runUpdateAction(_ sender: NSMenuItem) {
+        switch sender.representedObject as? UpdateMenuAction {
+        case .check: updater.check(userInitiated: true)
+        case .restartToUpdate: updater.restartToUpdate()
+        case .openReleasePage: updater.openReleasePage()
+        case nil: break
+        }
+    }
+
+    @objc private func toggleAutomaticUpdates() {
+        updater.automatic.toggle()
     }
 
     @objc private func quit() {

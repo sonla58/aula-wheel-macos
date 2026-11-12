@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let hid = HIDMonitor()
     private let poster = EventPoster()
     let hud = HUDController()
+    let updater = Updater()
     lazy var setup = SetupWindowController(environment: SetupEnvironment(
         modes: { [unowned self] in controller.modes },
         keyboardConnected: { [unowned self] in hid.isConnected },
@@ -85,6 +86,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // A previous crash can leave the knob remapped with nobody listening.
         remapper.clear()
 
+        // A staged update goes in before the app touches the keyboard; the new copy then starts instead.
+        updater.prepareAtLaunch()
+        if updater.installAtLaunchIfNeeded() { return }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         let menu = NSMenu()
         menu.delegate = self
@@ -115,6 +120,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateStatusIcon()
         setup.showIfNeeded()
 
+        updater.announce = { [weak self] symbol, title, subtitle in
+            self?.hud.showBanner(symbol: symbol, title: title, subtitle: subtitle)
+        }
+        updater.isBusy = { [weak self] in
+            guard let self else { return true }
+            return self.setup.isVisible || self.controller.isPickerOpen
+        }
+        updater.start()
+
         let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkHealth() }
         }
@@ -123,6 +137,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         deactivate()
+        // After the keyboard is handed back, so a slow copy can't hold up anything.
+        updater.installOnQuit()
     }
 
     private func installSignalHandlers() {

@@ -32,6 +32,12 @@ Release builds are not notarized, so each time you open a newly downloaded versi
 
 Releases from 0.0.2 on are signed with the same certificate, so Accessibility and Input Monitoring should stay allowed when you update. Coming from 0.0.1 (which was signed differently), remove AulaWheel from both lists and add it again once (the setup window shows you how).
 
+### Updates
+
+AulaWheel checks GitHub for a new release once a day and downloads it in the background. Before using a download it checks that the download is signed with the same certificate as the copy you have, which also keeps Accessibility and Input Monitoring allowed. The update is installed when you choose **Restart to Update** in the menu bar, when you quit AulaWheel, when it next starts, or after 10 minutes without keyboard or mouse input. While AulaWheel restarts, the knob and F10–F12 work as they do without the app.
+
+Turn off **Update Automatically** in the menu to check only when you choose **Check for Updates**. AulaWheel can only replace itself from a folder you can write to, such as Applications, and only when it is a release build. Otherwise the menu says why and links to the download.
+
 On first launch a setup window walks you through allowing **Accessibility** and **Input Monitoring** (a small guide sits next to System Settings and shows what to turn on), connecting the keyboard, and trying each knob gesture. Reopen it any time with **Setup Guide…** in the menu bar.
 
 Requires macOS 14 or later (the Liquid Glass HUD needs macOS 26).
