@@ -91,6 +91,14 @@ public struct AvailableUpdate: Equatable, Sendable {
     public var releasePage: URL?
 }
 
+/// What the latest release means for the running version.
+public enum ReleaseCheck: Equatable, Sendable {
+    case upToDate
+    case update(AvailableUpdate)
+    /// A newer final release has no zip the app can use, perhaps because its files are still uploading.
+    case noDownload(AppVersion, releasePage: URL?)
+}
+
 /// When the app may swap in a downloaded update.
 public enum InstallMoment: Equatable, Sendable {
     /// The user chose "Restart to Update".
@@ -164,6 +172,19 @@ public enum UpdatePolicy {
             size: asset.size,
             sha256: sha256(fromDigest: asset.digest),
             releasePage: release.htmlURL)
+    }
+
+    public static func check(_ release: GitHubRelease, current: AppVersion) -> ReleaseCheck {
+        if let update = update(from: release, current: current) { return .update(update) }
+        guard !release.draft, !release.prerelease,
+              let version = AppVersion(release.tagName), version > current else { return .upToDate }
+        return .noDownload(version, releasePage: release.htmlURL)
+    }
+
+    /// Remembers a release that failed verification. It only holds for the setup that rejected it:
+    /// after a macOS update or on another copy of the app, the same release may be fine.
+    public static func rejectionKey(version: AppVersion, current: AppVersion, os: AppVersion) -> String {
+        "\(version)|\(current)|\(os)"
     }
 
     /// GitHub reports digests as `sha256:<hex>`.

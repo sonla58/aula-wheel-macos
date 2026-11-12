@@ -39,6 +39,8 @@ final class Updater {
     private var staged: AppVersion?
     private var releasePage: URL?
     private var work: Task<Void, Never>?
+    /// Identifies the current `work`, so a cancelled check finishing late can't clear or overwrite a newer state.
+    private var workID = 0
     private var installing = false
     /// The last automatic check that was started, successful or not; kept in memory only.
     private var lastAttempt: Date?
@@ -123,6 +125,7 @@ final class Updater {
         guard !installing, stagedStillThere(), let staged, let current,
               UpdatePolicy.shouldInstall(staged: staged, current: current, moment: .quitting) else { return }
         work?.cancel()
+        work = nil
         do {
             let prepared = try UpdateInstaller.prepare(
                 staged: UpdateInstaller.stagedApp, nextTo: target, expected: staged, bundleID: bundleID,
@@ -167,13 +170,17 @@ final class Updater {
         guard work == nil, !installing else { return }
         let previous = phase
         phase = .checking
+        workID += 1
+        let id = workID
         work = Task { [weak self] in
             guard let self else { return }
-            defer { self.work = nil }
+            defer { if self.workID == id { self.work = nil } }
             do {
                 let release = try await self.fetchLatestRelease()
-                self.defaults.set(Date(), forKey: Key.lastCheck)
-                guard let update = UpdatePolicy.update(from: release, current: current) else {
+                try Task.checkCancellation()
+                switch UpdatePolicy.check(release, current: current) {
+                case .upToDate:
+                    self.defaults.set(Date(), forKey: Key.lastCheck)
                     if let staged = self.staged {
                         self.phase = .ready(staged)
                     } else {
@@ -183,12 +190,23 @@ final class Updater {
                                            "Version \(current)")
                         }
                     }
-                    return
+                case .noDownload(let version, let page):
+                    // Not recorded as a successful check, so it is tried again within the hour.
+                    self.releasePage = page ?? self.releasePage
+                    self.phase = .manualOnly(
+                        version, reason: "\(UpdateInstaller.appName) \(version) has no automatic download yet")
+                    if userInitiated { self.announceAvailable(version) }
+                case .update(let update):
+                    self.defaults.set(Date(), forKey: Key.lastCheck)
+                    self.releasePage = update.releasePage ?? self.releasePage
+                    try await self.handle(update, userInitiated: userInitiated)
                 }
-                self.releasePage = update.releasePage ?? self.releasePage
-                try await self.handle(update, userInitiated: userInitiated)
             } catch is CancellationError {
-                self.phase = previous
+                // Only undo what this check showed; an install may have set something newer meanwhile.
+                switch self.phase {
+                case .checking, .downloading: self.phase = self.staged.map { .ready($0) } ?? previous
+                default: break
+                }
             } catch {
                 Log.update.error("update check failed: \(String(describing: error), privacy: .public)")
                 // An update already downloaded stays installable; the next check tries again.
@@ -208,14 +226,14 @@ final class Updater {
         }
         if let blocker {
             phase = .manualOnly(update.version, reason: blocker)
-        } else if defaults.string(forKey: Key.rejected) == update.version.description {
+        } else if defaults.string(forKey: Key.rejected) == rejectionKey(update.version) {
             phase = .manualOnly(update.version, reason: "\(update.version) can't be installed automatically")
         } else {
             phase = .downloading(update.version)
             do {
                 try await download(update)
             } catch let failure as UpdateInstaller.Failure where failure.rejectsVersion {
-                defaults.set(update.version.description, forKey: Key.rejected)
+                defaults.set(rejectionKey(update.version), forKey: Key.rejected)
                 phase = .manualOnly(update.version, reason: failure.description)
                 if userInitiated {
                     announce?("exclamationmark.triangle.fill", "Update can't be installed", failure.description)
@@ -228,10 +246,18 @@ final class Updater {
             if userInitiated { announceReady(update.version) }
             return
         }
-        if userInitiated {
-            announce?("arrow.down.circle.fill", "\(UpdateInstaller.appName) \(update.version) is available",
-                      "Download it from the menu")
-        }
+        if userInitiated { announceAvailable(update.version) }
+    }
+
+    private func announceAvailable(_ version: AppVersion) {
+        announce?("arrow.down.circle.fill", "\(UpdateInstaller.appName) \(version) is available",
+                  "Download it from the menu")
+    }
+
+    private func rejectionKey(_ version: AppVersion) -> String {
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        let osVersion = AppVersion("\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)") ?? AppVersion("0")!
+        return UpdatePolicy.rejectionKey(version: version, current: current ?? AppVersion("0")!, os: osVersion)
     }
 
     private func announceReady(_ version: AppVersion) {
@@ -338,6 +364,7 @@ final class Updater {
             return
         }
         work?.cancel()
+        work = nil
         installing = true
         let stagedApp = UpdateInstaller.stagedApp
         let target = target
@@ -421,7 +448,7 @@ final class Updater {
     private func handleInstallFailure(_ error: Error, version: AppVersion) {
         autoInstallPaused = true
         if let failure = error as? UpdateInstaller.Failure, failure.rejectsVersion {
-            defaults.set(version.description, forKey: Key.rejected)
+            defaults.set(rejectionKey(version), forKey: Key.rejected)
             discardStaged()
             phase = .manualOnly(version, reason: failure.description)
         } else {

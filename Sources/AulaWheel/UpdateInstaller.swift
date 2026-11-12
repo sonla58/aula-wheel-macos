@@ -5,8 +5,8 @@ import Security
 /// File work for updates: checking a downloaded app, and swapping it in place of the running one.
 ///
 /// The swap is a single atomic rename, so whatever interrupts it (crash, power loss, a killed
-/// process), the app at the original path is either the old version or the new one. Only volumes
-/// without `RENAME_SWAP` fall back to two renames, with a brief moment where no app is there.
+/// process), the app at the original path is always either the old version or the new one.
+/// Volumes that can't swap are not updated in place at all.
 enum UpdateInstaller {
     struct Failure: Error, CustomStringConvertible {
         let description: String
@@ -49,6 +49,12 @@ enum UpdateInstaller {
         let fm = FileManager.default
         guard fm.isWritableFile(atPath: folder.path), fm.isWritableFile(atPath: bundle.path) else {
             return "No permission to replace \(appName) in \(folder.lastPathComponent)"
+        }
+        // Without an atomic swap, an interrupted install could leave no app at all.
+        let swappable = (try? bundle.resourceValues(forKeys: [.volumeSupportsSwapRenamingKey]))?
+            .volumeSupportsSwapRenaming == true
+        guard swappable else {
+            return "Move \(appName) to Applications to get updates"
         }
         guard let info = signingInfo(of: bundle),
               let certificates = info[kSecCodeInfoCertificates as String] as? [SecCertificate],
@@ -166,32 +172,21 @@ enum UpdateInstaller {
     /// Exchanges `prepared` and `target`, then deletes the old app. `prepared` is removed either way.
     static func swap(_ prepared: URL, into target: URL) throws {
         defer { try? FileManager.default.removeItem(at: prepared) }
-        if renamex_np(prepared.path, target.path, UInt32(RENAME_SWAP)) == 0 { return }
-        let swapError = errno
-        guard swapError == ENOTSUP || swapError == EINVAL else {
-            throw Failure(describe(errno: swapError, folder: target.deletingLastPathComponent()))
-        }
-        // Volumes without RENAME_SWAP: two renames, undoing the first if the second fails.
-        let old = target.deletingLastPathComponent()
-            .appendingPathComponent("\(tempPrefix)\(UUID().uuidString)-old.app", isDirectory: true)
-        guard rename(target.path, old.path) == 0 else {
+        // No fallback to two renames: being interrupted between them would leave no app at all.
+        // `blocker()` already refuses volumes that can't swap.
+        guard renamex_np(prepared.path, target.path, UInt32(RENAME_SWAP)) == 0 else {
             throw Failure(describe(errno: errno, folder: target.deletingLastPathComponent()))
         }
-        guard rename(prepared.path, target.path) == 0 else {
-            let moveError = errno
-            _ = rename(old.path, target.path)
-            throw Failure(describe(errno: moveError, folder: target.deletingLastPathComponent()))
-        }
-        try? FileManager.default.removeItem(at: old)
     }
 
-    /// Opens `app` once this process has exited (or after 10 s), so the new copy starts fresh.
+    /// Opens `app` once this process has exited, so the new copy starts fresh instead of `open`
+    /// just activating the old one. Gives up waiting after 5 minutes.
     static func relaunch(_ app: URL) throws {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
         task.arguments = [
             "-c",
-            "i=0; while kill -0 \"$1\" 2>/dev/null && [ $i -lt 100 ]; do sleep 0.1; i=$((i+1)); done; /usr/bin/open \"$2\"",
+            "i=0; while kill -0 \"$1\" 2>/dev/null && [ $i -lt 3000 ]; do sleep 0.1; i=$((i+1)); done; /usr/bin/open \"$2\"",
             "sh", String(getpid()), app.path,
         ]
         try task.run()

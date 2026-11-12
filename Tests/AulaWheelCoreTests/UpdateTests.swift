@@ -167,4 +167,31 @@ import Testing
         #expect(UpdatePolicy.menuEntry(for: .failed("offline")) ==
             UpdateMenuEntry(status: "Update failed: offline", actionTitle: "Check for Updates", action: .check))
     }
+
+    @Test func newerReleaseWithoutAZipIsReportedNotHidden() {
+        #expect(UpdatePolicy.check(release("v0.1.0", assets: ["AulaWheel-0.1.0.dmg"]), current: v("0.0.2")) ==
+            .noDownload(v("0.1.0"), releasePage: URL(string: "https://github.com/o/r/releases/tag/v0.1.0")))
+        #expect(UpdatePolicy.check(release("v0.1.0", assets: []), current: v("0.0.2")) ==
+            .noDownload(v("0.1.0"), releasePage: URL(string: "https://github.com/o/r/releases/tag/v0.1.0")))
+    }
+
+    @Test func checkSortsReleasesIntoUpdateOrUpToDate() {
+        if case .update(let update) = UpdatePolicy.check(release("v0.1.0"), current: v("0.0.2")) {
+            #expect(update.version == v("0.1.0"))
+        } else {
+            Issue.record("expected an update")
+        }
+        #expect(UpdatePolicy.check(release("v0.0.2"), current: v("0.0.2")) == .upToDate)
+        #expect(UpdatePolicy.check(release("v0.1.0", prerelease: true, assets: []), current: v("0.0.2")) == .upToDate)
+        #expect(UpdatePolicy.check(release("v0.1.0", draft: true, assets: []), current: v("0.0.2")) == .upToDate)
+        #expect(UpdatePolicy.check(release("nightly", assets: []), current: v("0.0.2")) == .upToDate)
+    }
+
+    @Test func rejectionExpiresWithANewMacOSOrAnotherAppVersion() {
+        let key = UpdatePolicy.rejectionKey(version: v("0.1.0"), current: v("0.0.2"), os: v("14.5"))
+        #expect(key == UpdatePolicy.rejectionKey(version: v("0.1.0"), current: v("0.0.2"), os: v("14.5")))
+        #expect(key != UpdatePolicy.rejectionKey(version: v("0.1.0"), current: v("0.0.2"), os: v("15.0")))
+        #expect(key != UpdatePolicy.rejectionKey(version: v("0.1.0"), current: v("0.0.3"), os: v("14.5")))
+        #expect(key != UpdatePolicy.rejectionKey(version: v("0.1.1"), current: v("0.0.2"), os: v("14.5")))
+    }
 }
