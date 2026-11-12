@@ -31,12 +31,58 @@ jobs:
             exit 1
           fi
 
+      # Releases must be signed with the pinned certificate (scripts/release-cert.sha1), or users lose
+      # their permissions. Only releases get the key; other runs are ad-hoc signed.
+      - name: Import signing certificate
+        id: signing
+        if: github.event_name == 'release'
+        env:
+          SIGNING_CERT_P12: ${{ secrets.SIGNING_CERT_P12 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+        run: |
+          pinned="$(tr -d '[:space:]' 2>/dev/null < scripts/release-cert.sha1 || true)"
+          if [[ -z "$pinned" ]]; then
+            echo "::error::scripts/release-cert.sha1 is missing. Run scripts/make-signing-cert.sh once and commit it."
+            exit 1
+          fi
+          if [[ -z "$SIGNING_CERT_P12" || -z "$SIGNING_CERT_PASSWORD" ]]; then
+            echo "::error::The SIGNING_CERT_P12 / SIGNING_CERT_PASSWORD secrets are not set."
+            exit 1
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -base64 24)"
+          echo "$SIGNING_CERT_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/signing.p12" -k "$keychain" -P "$SIGNING_CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/signing.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" >/dev/null
+          # codesign only finds identities in keychains on the search list.
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identities="$(security find-identity -p codesigning "$keychain")"
+          if [[ "$identities" != *"$pinned"* ]]; then
+            echo "::error::The SIGNING_CERT_P12 secret is not the certificate pinned in scripts/release-cert.sha1."
+            exit 1
+          fi
+          echo "identity=$pinned" >> "$GITHUB_OUTPUT"
+
       - name: Build universal app
         run: scripts/build-app.sh
         env:
           ARCHS: arm64 x86_64
-          # No signing certificate on the runner; see the README for what ad-hoc signing means for users.
-          SIGN_IDENTITY: "-"
+          SIGN_IDENTITY: ${{ steps.signing.outputs.identity || '-' }}
+
+      - name: Check the release is signed with the pinned certificate
+        if: github.event_name == 'release'
+        run: |
+          pinned="$(tr -d '[:space:]' < scripts/release-cert.sha1 | tr '[:upper:]' '[:lower:]')"
+          requirement="$(codesign --display --requirements - build/AulaWheel.app 2>&1)"
+          echo "$requirement"
+          if [[ "$requirement" != *"certificate leaf = H\"$pinned\""* ]]; then
+            echo "::error::build/AulaWheel.app is not signed with the pinned certificate."
+            exit 1
+          fi
 
       - name: Package zip and DMG
         run: scripts/package.sh
@@ -54,3 +100,9 @@ jobs:
         run: gh release upload "$GITHUB_REF_NAME" build/AulaWheel-*.zip build/AulaWheel-*.dmg --clobber
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Remove signing keychain
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/signing.p12"
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
